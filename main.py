@@ -1,93 +1,63 @@
 import pandas as pd
-
-# Machine Learning tools
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
-# -----------------------------------
-# STEP 1: Load datasets
-# -----------------------------------
+# Load CSV files
+fake = pd.read_csv("Fake_small.csv")
+true = pd.read_csv("True_small.csv")
 
-fake = pd.read_csv("Fake.csv")
-true = pd.read_csv("True.csv")
+# Add labels
+fake["label"] = 0     # Fake news
+true["label"] = 1     # True news
 
-# -----------------------------------
-# STEP 2: Add labels
-# Fake = 0
-# Real = 1
-# -----------------------------------
+# Merge datasets
+data = pd.concat([fake, true], axis=0)
 
-fake["label"] = 0
-true["label"] = 1
+# Shuffle data
+data = data.sample(frac=1, random_state=42)
 
-# -----------------------------------
-# STEP 3: Combine datasets
-# -----------------------------------
-
-data = pd.concat([fake, true])
-
-# Keep only text and label
+# Keep only text and label columns
 data = data[["text", "label"]]
 
-# -----------------------------------
-# STEP 4: Input and Output
-# -----------------------------------
-
+# Split data
 X = data["text"]
 y = data["label"]
 
-# -----------------------------------
-# STEP 5: Split training and testing
-# -----------------------------------
-
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X, y,
+    test_size=0.2,
+    random_state=42
 )
 
-# -----------------------------------
-# STEP 6: Convert text into numbers
-# -----------------------------------
-
-vectorizer = TfidfVectorizer()
+# Convert text into numbers
+vectorizer = TfidfVectorizer(stop_words='english', max_df=0.7)
 
 X_train = vectorizer.fit_transform(X_train)
 X_test = vectorizer.transform(X_test)
 
-# -----------------------------------
-# STEP 7: Train AI model
-# -----------------------------------
-
+# Train model
 model = LogisticRegression()
-
 model.fit(X_train, y_train)
 
-# -----------------------------------
-# STEP 8: Test model accuracy
-# -----------------------------------
+# Test accuracy
+prediction = model.predict(X_test)
 
-y_pred = model.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, prediction))
 
-accuracy = accuracy_score(y_test, y_pred)
+# User input prediction
+while True:
+    news = input("\nEnter news text (or type exit): ")
 
-print("Model Accuracy:", accuracy)
+    if news.lower() == "exit":
+        break
 
-# -----------------------------------
-# STEP 9: User input prediction
-# -----------------------------------
+    news_vector = vectorizer.transform([news])
 
-news = input("\nEnter news text:\n")
+    result = model.predict(news_vector)
 
-news_vector = vectorizer.transform([news])
-
-prediction = model.predict(news_vector)
-
-# -----------------------------------
-# STEP 10: Show result
-# -----------------------------------
-
-if prediction[0] == 0:
-    print("\n🟥 Fake News")
-else:
-    print("\n🟩 Real News")
+    if result[0] == 0:
+        print("Prediction: Fake News")
+    else:
+        print("Prediction: True News")
