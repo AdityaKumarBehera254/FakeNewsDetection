@@ -5,59 +5,61 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
 # Load CSV files
-fake = pd.read_csv("Fake_small.csv")
-true = pd.read_csv("True_small.csv")
+fake1 = pd.read_csv("fake 1.csv")
+fake2 = pd.read_csv("fake 2.csv")
+
+real1 = pd.read_csv("real 1.csv")
+real2 = pd.read_csv("real 2.csv")
+
+# Merge fake datasets
+fake = pd.concat([fake1, fake2], axis=0)
+
+# Merge real datasets
+true = pd.concat([real1, real2], axis=0)
 
 # Add labels
-fake["label"] = 0     # Fake news
-true["label"] = 1     # True news
+fake["label"] = 0
+true["label"] = 1
 
-# Merge datasets
+# Merge all data
 data = pd.concat([fake, true], axis=0)
 
 # Shuffle data
-data = data.sample(frac=1, random_state=42)
+data = data.sample(frac=1).reset_index(drop=True)
 
-# Keep only text and label columns
-data = data[["text", "label"]]
-
-# Split data
+# Features and labels
 X = data["text"]
 y = data["label"]
 
+# Split dataset
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y,
-    test_size=0.2,
-    random_state=42
+    X, y, test_size=0.2, random_state=42
 )
 
-# Convert text into numbers
-vectorizer = TfidfVectorizer(stop_words='english', max_df=0.7)
-
-X_train = vectorizer.fit_transform(X_train)
-X_test = vectorizer.transform(X_test)
+# Convert text to vectors
+vectorizer = TfidfVectorizer()
+X_train_vec = vectorizer.fit_transform(X_train)
+X_test_vec = vectorizer.transform(X_test)
 
 # Train model
 model = LogisticRegression()
-model.fit(X_train, y_train)
+model.fit(X_train_vec, y_train)
 
-# Test accuracy
-prediction = model.predict(X_test)
+# Accuracy
+y_pred = model.predict(X_test_vec)
+print("Accuracy:", accuracy_score(y_test, y_pred))
 
-print("Accuracy:", accuracy_score(y_test, prediction))
-
-# User input prediction
+# User input
 while True:
     news = input("\nEnter news text (or type exit): ")
 
     if news.lower() == "exit":
         break
 
-    news_vector = vectorizer.transform([news])
+    news_vec = vectorizer.transform([news])
+    prediction = model.predict(news_vec)
 
-    result = model.predict(news_vector)
-
-    if result[0] == 0:
-        print("Prediction: Fake News")
+    if prediction[0] == 1:
+        print("Real News")
     else:
-        print("Prediction: True News")
+        print("Fake News")
